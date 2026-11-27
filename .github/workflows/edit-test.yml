@@ -1,0 +1,22 @@
+name: edit-test
+on:
+  workflow_dispatch:
+    inputs:
+      comment_id:
+        required: true
+jobs:
+  edit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${{ github.repository }}/issues/comments/${{ inputs.comment_id }}" -q .user.login
+          body="$(gh api "repos/${{ github.repository }}/issues/comments/${{ inputs.comment_id }}" -q .body)"
+          printf '%s\n%s\n' "$body" "$(cat .github/demo/next.md)" > new.md
+          gh api -X PATCH "repos/${{ github.repository }}/issues/comments/${{ inputs.comment_id }}" -F body=@new.md -q '"edited by token; author still: " + .user.login'
